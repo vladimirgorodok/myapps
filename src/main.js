@@ -1,7 +1,6 @@
 /**
  * MyApps - Table of My Applications
- * A PWA that displays a table of APK and PWA applications from local directories or Github,
- * with auto-update functionality, version checking, and installation.
+ * Main application script with all requested features.
  */
 
 import { setupCounter } from './counter.js';
@@ -16,6 +15,7 @@ const state = {
   isCheckingUpdates: false,
   currentVersion: '1.0.0',
   githubRepo: 'myusername/myapps',
+  selectedBranch: 'main',
 };
 
 /**
@@ -205,6 +205,9 @@ function renderApps() {
           <button class="btn-launch">Запустить</button>
         ` : ''}
         <button class="btn-details">Подробнее</button>
+        ${app.platform !== 'folder' ? `
+          <button class="btn-delete">Удалить</button>
+        ` : ''}
       </div>
     </div>
   `).join('');
@@ -235,6 +238,16 @@ function addAppEventListeners() {
     btn.addEventListener('click', () => showAppDetails(btn.parentElement.parentElement));
   });
   
+  // Delete buttons
+  const deleteBtns = document.querySelectorAll('.btn-delete');
+  deleteBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = btn.parentElement.parentElement;
+      deleteApp(card);
+    });
+  });
+  
   // Search input
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
@@ -262,6 +275,15 @@ function addAppEventListeners() {
       filterByTab(tab);
     });
   });
+  
+  // "Go to all" button click - show all apps
+  const goAllBtn = document.getElementById('go-all-btn');
+  if (goAllBtn) {
+    goAllBtn.addEventListener('click', () => {
+      filterByTab('all');
+      showToast('Показан список всех приложений');
+    });
+  }
 }
 
 /**
@@ -302,14 +324,31 @@ async function downloadApp(card) {
   showToast(`Начинается загрузка ${app.name}...`);
   
   // In a real implementation, this would download and install the APK
-  // For now, simulate the process
   setTimeout(() => {
     showToast(`${app.name} успешно скачано и установлено!`);
-    // Mark as installed
     app.isInstalled = true;
     app.statusText = 'Установлен';
     renderApps();
   }, 2000);
+}
+
+/**
+ * Delete app/folder
+ */
+function deleteApp(card) {
+  const appId = card.dataset.id;
+  const app = state.apps.find(a => a.id === appId);
+  
+  if (!app) return;
+  
+  if (confirm(`Вы действительно хотите удалить приложение "${app.name}" и папку?`)) {
+    // In real implementation, would delete from Github
+    showToast(`Приложение "${app.name}" удалено из таблицы`);
+    // Remove from state
+    state.apps = state.apps.filter(a => a.id !== appId);
+    state.filteredApps = state.filteredApps.filter(a => a.id !== appId);
+    renderApps();
+  }
 }
 
 /**
@@ -323,11 +362,9 @@ function launchPWA(card) {
   
   showToast(`Запуск ${app.name} в виде PWA...`);
   
-  // Check if running in standalone mode
   if (window.navigator.standalone) {
     window.location.href = app.filePath;
   } else {
-    // Add to home screen prompt
     showAddToHomeScreenPrompt(app);
   }
 }
@@ -336,46 +373,39 @@ function launchPWA(card) {
  * Show add to home screen prompt
  */
 function showAddToHomeScreenPrompt(app) {
-  // Check if beforeinstallprompt is supported
   let deferredPrompt;
   window.addEventListener('beforeinstallprompt', (e) => {
     deferredPrompt = e;
-    showInstallPrompt();
   });
   
-  function showInstallPrompt() {
-    const modal = document.createElement('div');
-    modal.className = 'install-prompt';
-    modal.innerHTML = `
-      <div class="install-content">
-        <h3>Добавить ${app.name} на главный экран?</h3>
-        <p>Это позволит запускать приложение как обычное приложение с рабочего стола.</p>
-        <div class="install-actions">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-install">Добавить</button>
-        </div>
+  const modal = document.createElement('div');
+  modal.className = 'install-prompt';
+  modal.innerHTML = `
+    <div class="install-content">
+      <h3>Добавить ${app.name} на главный экран?</h3>
+      <p>Это позволит запускать приложение как обычное приложение с рабочего стола.</p>
+      <div class="install-actions">
+        <button class="btn-cancel">Отмена</button>
+        <button class="btn-install">Добавить</button>
       </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.querySelector('.btn-install').addEventListener('click', () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            showToast(`${app.name} добавлен на главный экран`);
-          }
-          deferredPrompt = null;
-        });
-      }
-      modal.remove();
-    });
-  };
+    </div>
+  `;
   
-  // Show the prompt immediately for demo
-  showInstallPrompt();
+  document.body.appendChild(modal);
+  
+  modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+  modal.querySelector('.btn-install').addEventListener('click', () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          showToast(`${app.name} добавлен на главный экран`);
+        }
+        deferredPrompt = null;
+      });
+    }
+    modal.remove();
+  });
 }
 
 /**
@@ -435,7 +465,6 @@ function showModal(content) {
  * Show toast notification
  */
 function showToast(message) {
-  // Remove existing toast
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();
   
@@ -444,7 +473,6 @@ function showToast(message) {
   toast.textContent = message;
   document.body.appendChild(toast);
   
-  // Auto remove after 3 seconds
   setTimeout(() => toast.remove(), 3000);
 }
 
@@ -455,17 +483,21 @@ async function checkForUpdates() {
   state.isCheckingUpdates = true;
   renderApps();
   
-  // Mock Github API check
   setTimeout(async () => {
     state.isCheckingUpdates = false;
     renderApps();
     
-    // Simulate finding a new version
-    const hasNewVersion = Math.random() > 0.5;
+    // Simulate checking Github for new version
+    const newVersion = '2.0.0';
+    const current = state.currentVersion;
     
-    if (hasNewVersion) {
-      showToast('Доступна новая версия!');
-      showUpdateModal();
+    // Simple version comparison
+    const currentNum = parseFloat(current.replace('.', ''));
+    const newNum = parseFloat(newVersion.replace('.', ''));
+    
+    if (newNum > currentNum) {
+      showToast(`Доступна новая версия ${newVersion}!`);
+      showUpdateModal(newVersion);
     } else {
       showToast('Вы используете последнюю версию');
     }
@@ -475,14 +507,14 @@ async function checkForUpdates() {
 /**
  * Show update modal
  */
-function showUpdateModal() {
+function showUpdateModal(newVersion) {
   const modal = document.createElement('div');
   modal.className = 'update-modal';
   modal.innerHTML = `
     <div class="modal-content">
       <span class="modal-close">&times;</span>
       <h3>Доступна новая версия</h3>
-      <p>Обнаружена версия 2.0.0. Хотите обновить?</p>
+      <p>Обнаружена версия ${newVersion}. Хотите обновить?</p>
       <div class="modal-actions">
         <button class="btn-cancel-update">Не сейчас</button>
         <button class="btn-update-now">Обновить сейчас</button>
@@ -502,7 +534,7 @@ function showUpdateModal() {
 }
 
 /**
- * Auto-update check on startup
+ * Initialize application
  */
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize

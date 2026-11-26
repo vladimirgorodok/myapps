@@ -108,6 +108,25 @@ body {
   color: var(--text-primary);
 }
 
+/* Go all button */
+.btn-go-all {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #3a3a5a;
+  color: var(--text-secondary);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-go-all:hover {
+  background: #2a2a4a;
+  color: var(--text-primary);
+}
+
 /* Search */
 .app-search {
   padding: 0 2rem 1rem;
@@ -291,6 +310,22 @@ body {
 
 .btn-details:hover {
   background: #4a4a6a;
+}
+
+/* Buttons with delete action */
+.btn-delete {
+  padding: 0.5rem 1rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.btn-delete:hover {
+  background: #f87171;
 }
 
 /* Modals */
