@@ -7,8 +7,8 @@ android {
         applicationId "ru.myapps.myapps"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.4.0"
+        versionCode 5
+        versionName "1.4.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,7 +16,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        shared {
+            if (System.getenv("MYAPPS_KEYSTORE_FILE")) {
+                storeFile file(System.getenv("MYAPPS_KEYSTORE_FILE"))
+                storePassword System.getenv("MYAPPS_KS_PASS")
+                keyAlias System.getenv("MYAPPS_KEY_ALIAS")
+                keyPassword System.getenv("MYAPPS_KEY_PASS")
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (System.getenv("MYAPPS_KEYSTORE_FILE")) {
+                signingConfig signingConfigs.shared
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

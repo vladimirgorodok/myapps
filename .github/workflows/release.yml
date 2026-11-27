@@ -47,7 +47,14 @@ jobs:
 
       - name: Собрать APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        env:
+          KEYSTORE_B64: ${{ secrets.MYAPPS_KEYSTORE_B64 }}
+          MYAPPS_KS_PASS: ${{ secrets.MYAPPS_KS_PASS }}
+          MYAPPS_KEY_ALIAS: ${{ secrets.MYAPPS_KEY_ALIAS }}
+          MYAPPS_KEY_PASS: ${{ secrets.MYAPPS_KEY_PASS }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/shared.keystore"
+          MYAPPS_KEYSTORE_FILE="$RUNNER_TEMP/shared.keystore" ./gradlew assembleDebug --no-daemon
 
       - name: Переименовать APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk "myapps-${{ steps.ver.outputs.version }}.apk"
