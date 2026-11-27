@@ -1,54 +1,188 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Мои приложения - MyApps</title>
-  <link rel="icon" href="/vite-assets/icons.svg" type="image/svg+xml">
-  <link rel="manifest" href="/web/manifest.webmanifest">
-  <meta name="theme-color" content="#1a1a2e">
-  <meta name="description"="Table of My Applications">
-  <script type="module" crossorigin src="/assets/index-4C5LbtXf.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CdySCrYV.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>Мои приложения — MyApps</title>
+<style>
+:root{--p:#6366f1;--pd:#4f46e5;--bg:#0f0f23;--c:#1a1a2e;--t:#e8e8f0;--t2:#71719a;--g:#22c55e;--r:#ef4444;--b:#3a3a5a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-text-size-adjust:100%}
+
+#sp{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s}
+#sp.h{opacity:0;pointer-events:none}
+#sp .lg{font-size:4rem;margin-bottom:1rem;animation:pu 1.5s ease-in-out infinite}
+#sp .ti{font-size:1.5rem;font-weight:600;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#sp .sn{width:40px;height:40px;margin-top:1.5rem;border:3px solid rgba(99,102,241,.3);border-top-color:var(--p);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes pu{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+.app{display:none}.app.v{display:block}
+
+header{padding:1rem;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+header h1{font-size:1.3rem;font-weight:600;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{font-size:.75rem;color:var(--t2);margin-top:.2rem}
+.hr{display:flex;align-items:center;gap:.5rem}
+.vr{font-size:.75rem;color:var(--t2)}
+.btn{padding:.4rem .8rem;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;transition:all .2s}
+.bp{background:var(--p);color:#fff}.bp:hover{background:var(--pd)}
+.bg{background:var(--g);color:#fff}.bb{background:#3b82f6;color:#fff}
+.br{background:var(--r);color:#fff}.bv{background:var(--b);color:var(--t)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.tabs{padding:.5rem 1rem;display:flex;flex-wrap:wrap;gap:.3rem;border-bottom:1px solid var(--b)}
+.tb{padding:.4rem .8rem;background:transparent;border:1px solid var(--b);color:var(--t2);border-radius:16px;font-size:.75rem;cursor:pointer}
+.tb.a{background:var(--p);border-color:var(--p);color:#fff}
+
+.srch{padding:.5rem 1rem}.srch input{width:100%;padding:.5rem .8rem;background:#2a2a4a;border:1px solid var(--b);border-radius:16px;color:var(--t);font-size:.85rem;outline:none}
+.srch input::placeholder{color:#666}
+
+.ct{padding:.5rem 1rem 2rem}
+
+.card{background:var(--c);border:1px solid var(--b);border-radius:10px;padding:.8rem;margin-bottom:.5rem}
+.ch{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.ci{font-size:1.2rem}.cn{font-size:.9rem;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bd{padding:.15rem .4rem;border-radius:4px;font-size:.65rem;font-weight:600;color:#fff}
+.bd.apk{background:var(--g)}.bd.pwa{background:#3b82f6}.bd.fld{background:#8b5cf6}
+
+.dt{display:grid;grid-template-columns:1fr 1fr;gap:.3rem .8rem;margin:.4rem 0}
+.dl{font-size:.7rem;color:var(--t2)}.dv{font-size:.75rem;color:var(--t)}.dv.ok{color:var(--g)}
+
+.act{display:flex;gap:.3rem;margin-top:.5rem;flex-wrap:wrap}
+.act .btn{flex:1;min-width:0;padding:.35rem .5rem;font-size:.7rem}
+
+.em{text-align:center;padding:3rem 1rem;color:var(--t2);font-size:.9rem}
+
+footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7rem;color:var(--t2)}
+
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:1000}
+.mbg.s{display:flex}
+.md{background:var(--c);border-radius:12px;padding:1.5rem;width:90%;max-width:400px;max-height:80vh;overflow-y:auto;position:relative}
+.mc{position:absolute;top:.5rem;right:.8rem;background:none;border:none;color:var(--t2);font-size:1.5rem;cursor:pointer}
+.md h3{margin-bottom:.5rem;color:var(--p)}
+.md pre{font-size:.75rem;color:var(--t);white-space:pre-wrap;font-family:inherit}
+
+.toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;z-index:2000;opacity:0;transition:opacity .3s;max-width:90%;text-align:center}
+.toast.s{opacity:1}
+
+.ibg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1500}
+.ibg.s{display:flex}
+.ib{background:var(--c);border-radius:12px;padding:1.5rem;width:90%;max-width:320px;text-align:center}
+.ib h3{color:var(--p);margin-bottom:.5rem}.ib p{color:var(--t2);font-size:.8rem;margin-bottom:1rem}
+.ia{display:flex;gap:.5rem;justify-content:center}
+
+@media(max-width:400px){header{padding:.8rem}header h1{font-size:1.1rem}.ct{padding:.3rem .6rem 1.5rem}.card{padding:.6rem}.dt{grid-template-columns:1fr;gap:.2rem}}
+</style>
 </head>
 <body>
-  <div class="app-container">
-    <header class="app-header">
-      <div class="header-left">
-        <h1>📱 Мои приложения</h1>
-        <p>Таблица моих APK и PWA приложений</p>
-      </div>
-      <div class="header-right">
-        <span id="app-version" class="app-version">Версия: loading...</span>
-        <button class="btn-check-updates" onclick="checkForUpdates()">Проверить обновления</button>
-      </div>
-    </header>
-    
-    <section class="app-tabs">
-      <div class="tab-buttons">
-        <button class="tab-btn active" data-tab="all">Все</button>
-        <button class="tab-btn" data-tab="apk">APK приложения</button>
-        <button class="tab-btn" data-tab="pwa">PWA приложения</button>
-        <button class="tab-btn" data-tab="folders">Папки без APK/PWA</button>
-      </div>
-    </section>
-    
-    <section class="app-search">
-      <input type="text" id="search-input" placeholder="Поиск приложений..." class="search-input">
-      <button class="search-clear" id="search-clear" style="display:none;">×</button>
-    </section>
-    
-    <main class="app-main">
-      <div id="apps-container" class="apps-container">
-        <!-- Apps will be rendered here -->
-      </div>
-    </main>
-    
-    <footer class="app-footer">
-      <p>Последнее обновление: <span id="last-update">just now</span></p>
-      <p>© 2026 MyApps. Все права защищены.</p>
-    </footer>
-  </div>
 
+<div id="sp"><div class="lg">📱</div><div class="ti">MyApps</div><div class="sn"></div></div>
+
+<div class="app" id="app">
+<header>
+  <div><h1>📱 Мои приложения</h1><p>Таблица моих APK и PWA приложений</p></div>
+  <div class="hr"><span class="vr" id="ver">Версия: ...</span><button class="btn bp" onclick="chkUpd()">Проверить обновления</button></div>
+</header>
+<div class="tabs">
+  <button class="tb a" data-t="all">Все</button>
+  <button class="tb" data-t="apk">APK</button>
+  <button class="tb" data-t="pwa">PWA</button>
+  <button class="tb" data-t="fld">Папки</button>
+</div>
+<div class="srch"><input type="text" id="srch" placeholder="Поиск приложений..."></div>
+<div class="ct" id="list"></div>
+<footer><p>Последнее обновление: <span id="lu">—</span></p><p>© 2026 MyApps</p></footer>
+</div>
+
+<div class="mbg" id="mbg" onclick="if(event.target===this)clM()"><div class="md"><button class="mc" onclick="clM()">×</button><h3 id="mt"></h3><pre id="mb"></pre></div></div>
+
+<div class="ibg" id="ibg"><div class="ib"><h3 id="it"></h3><p id="ix"></p><div class="ia"><button class="btn bv" onclick="document.getElementById('ibg').classList.remove('s')">Отмена</button><button class="btn bb" onclick="doRun()">Запустить</button></div></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S={apps:[],f:[],q:'',v:'1.0.0',tab:'all'};
+
+const APK=[
+  {n:'Avtotracker',i:'avtotracker',ic:'🚗',v:'1.0',d:'2024-01-15'},
+  {n:'CleanupUI',i:'cleanupui',ic:'🧹',v:'1.2',d:'2024-03-20'},
+  {n:'Lumen',i:'lumen',ic:'💡',v:'1.7',d:'2024-05-10'},
+  {n:'OpenChamber',i:'openchamber',ic:'📿',v:'1.0',d:'2024-06-01'},
+  {n:'OpenCodeSessions',i:'opencodesessions',ic:'📓',v:'2.0',d:'2024-07-10'},
+  {n:'Platezhi2',i:'platezhi2',ic:'🍽️',v:'1.17',d:'2024-08-15'},
+  {n:'Safe',i:'safe',ic:'',v:'2.15',d:'2024-09-01'},
+  {n:'bt-speaker-explorer',i:'bt-spkr',ic:'🔊',v:'1.0.1',d:'2024-10-01'},
+];
+const PWA=[
+  {n:'Codes Table',i:'codes-table',ic:'📊',v:'1.3.0',d:'2024-11-01'},
+  {n:'Kod Dnya',i:'kod-dnya',ic:'📅',v:'1.0',d:'2024-10-15'},
+];
+
+function build(){
+  const a=[];
+  APK.forEach(x=>a.push({...x,p:'apk',p2:null,inst:false}));
+  PWA.forEach(x=>a.push({...x,p:'pwa',p2:null,inst:false}));
+  a.push({n:'Папки без APK и PWA',i:'folders',ic:'📁',v:'N/A',d:'N/A',p:'fld',p2:null,inst:false});
+  return a;
+}
+
+function fmt(s){if(!s||s==='N/A')return '—';const d=new Date(s);return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear()}
+
+function init(){
+  S.apps=build();S.f=[...S.apps];
+  document.getElementById('ver').textContent='Версия: '+S.v;
+  document.getElementById('lu').textContent=new Date().toLocaleString('ru-RU');
+
+  document.querySelectorAll('.tb').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.tb').forEach(b=>b.classList.remove('a'));
+      t.classList.add('a');S.tab=t.dataset.t;filt();
+    });
+  });
+
+  document.getElementById('srch').addEventListener('input',e=>{S.q=e.target.value.toLowerCase();filt()});
+
+  render();chkUpd();
+}
+
+function filt(){
+  S.f=S.apps.filter(a=>{
+    if(S.tab!=='all'&&a.p!==S.tab)return false;
+    if(S.q&&!a.n.toLowerCase().includes(S.q)&&!a.i.toLowerCase().includes(S.q))return false;
+    return true;
+  });render();
+}
+
+function render(){
+  const el=document.getElementById('list');
+  if(!S.f.length){el.innerHTML='<div class="em">Нет приложений</div>';return}
+  el.innerHTML=S.f.map(a=>{
+    const dt=fmt(a.d);
+    let act='';
+    if(a.p==='apk')act='<button class="btn bg" '+(a.inst?'disabled':'')+' onclick="inst(\''+a.i+'\')">'+(a.inst?'✓ Установлено':'Скачать')+'</button>';
+    else if(a.p==='pwa')act='<button class="btn bb" onclick="runPWA(\''+a.i+'\')">Запустить</button>';
+    return '<div class="card"><div class="ch"><span class="ci">'+a.ic+'</span><span class="cn">'+a.n+'</span><span class="bd '+a.p+'">'+(a.p==='apk'?'APK':a.p==='pwa'?'PWA':'Папка')+'</span></div><div class="dt"><span class="dl">Создана:</span><span class="dv">'+dt+'</span><span class="dl">Версия:</span><span class="dv">'+a.v+'</span><span class="dl">Дата версии:</span><span class="dv">'+dt+'</span><span class="dl">Установлено:</span><span class="dv '+(a.inst?'ok':'')+'">'+(a.inst?'Да':'Нет')+'</span></div><div class="act">'+act+'<button class="btn bv" onclick="det(\''+a.i+'\')">Подробнее</button>'+(a.p!=='fld'?'<button class="btn br" onclick="del(\''+a.i+'\')">Удалить</button>':'')+'</div></div>';
+  }).join('');
+}
+
+function inst(id){var a=S.apps.find(function(x){return x.i===id});if(!a)return;tos('Скачивание '+a.n+'...');setTimeout(function(){a.inst=true;render();tos(a.n+' установлено!')},1500)}
+function runPWA(id){var a=S.apps.find(function(x){return x.i===id});if(!a)return;document.getElementById('it').textContent='Запустить '+a.n+'?';document.getElementById('ix').textContent='PWA запустится в браузере. Добавьте на главный экран для быстрого доступа.';document.getElementById('ibg').classList.add('s')}
+function doRun(){document.getElementById('ibg').classList.remove('s');tos('PWA запущен!')}
+function del(id){var a=S.apps.find(function(x){return x.i===id});if(!a)return;if(confirm('Удалить '+a.n+'?')){S.apps=S.apps.filter(function(x){return x.i!==id});S.f=S.f.filter(function(x){return x.i!==id});render();tos(a.n+' удалён')}}
+function det(id){
+  var a=S.apps.find(function(x){return x.i===id});if(!a)return;
+  var info;
+  if(a.p==='apk')info='APK: '+a.n+'\n\nВерсия: '+a.v+'\nСоздана: '+fmt(a.d)+'\nПоследняя версия: '+a.v+'\nСтатус: '+(a.inst?'Установлен':'Не установлен');
+  else if(a.p==='pwa')info='PWA: '+a.n+'\n\nВерсия: '+a.v+'\nСоздана: '+fmt(a.d)+'\nПоследняя версия: '+a.v+'\nСтатус: '+(a.inst?'Установлен':'Не установлен');
+  else info='Папка: '+a.n+'\n\nТип: Исходные файлы проекта';
+  document.getElementById('mt').textContent=a.n;document.getElementById('mb').textContent=info;document.getElementById('mbg').classList.add('s');
+}
+function clM(){document.getElementById('mbg').classList.remove('s')}
+function tos(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('s');setTimeout(function(){t.classList.remove('s')},2500)}
+function chkUpd(){tos('Проверка обновлений...');setTimeout(function(){var nw=parseFloat('2.0.0'.replace('.',''));var cu=parseFloat(S.v.replace('.',''));if(nw>cu){document.getElementById('mt').textContent='Новая версия!';document.getElementById('mb').textContent='Доступна версия 2.0.0. Текущая: '+S.v+'.';document.getElementById('mbg').classList.add('s')}else tos('Последняя версия')},1000)}
+
+window.addEventListener('load',function(){setTimeout(function(){document.getElementById('sp').classList.add('h');setTimeout(function(){document.getElementById('sp').style.display='none';document.getElementById('app').classList.add('v');init()},600)},1200)});
+</script>
 </body>
 </html>
