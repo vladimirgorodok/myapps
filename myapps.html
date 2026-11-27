@@ -28,7 +28,10 @@ header p{font-size:.75rem;color:var(--t2);margin-top:.2rem}
 .tabs{padding:.5rem 1rem;display:flex;flex-wrap:wrap;gap:.3rem;border-bottom:1px solid var(--b)}
 .tb{padding:.35rem .75rem;background:transparent;border:1px solid var(--b);color:var(--t2);border-radius:16px;font-size:.75rem;cursor:pointer}
 .tb.a{background:var(--p);border-color:var(--p);color:#fff}
-.srch{padding:.5rem 1rem}
+.srch{padding:.5rem 1rem .25rem}
+.flt{display:flex;gap:.5rem;flex-wrap:wrap;padding:0 1rem .5rem;align-items:center}
+.flt label{font-size:.75rem;color:var(--t2)}
+.flt select,td select{padding:.35rem .5rem;background:var(--inp);border:1px solid var(--b);border-radius:6px;color:var(--t);font-size:.8rem}
 .srch input{width:100%;padding:.5rem .8rem;background:var(--inp);border:1px solid var(--b);border-radius:16px;color:var(--t);font-size:.85rem;outline:none}
 .upd{margin:.5rem 1rem 0;padding:.6rem .8rem;background:var(--upd);border:1px solid var(--p);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
 .wrap{overflow-x:auto;padding:.5rem 1rem 1.5rem}
@@ -72,6 +75,7 @@ footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7
 <div id="selfUpd"></div>
 <div class="tabs" id="tabs"></div>
 <div class="srch"><input type="text" id="srch" placeholder="Поиск по названию..."></div>
+<div class="flt" id="flt"></div>
 <div class="wrap"><div id="list"></div></div>
 <footer>
   <p>Версия приложения: <span id="ver"></span> · Загружено: <span id="lu">—</span></p>
@@ -95,7 +99,7 @@ footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7
 <script>
 const OWNER = 'vladimirgorodok';
 const SELF_REPO = 'myapps';
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const API = 'https://api.github.com';
 const CACHE_KEY = 'myapps-cache-v1';
 const INSTALLED_KEY = 'myapps-installed-v1';
@@ -116,7 +120,9 @@ const TOOLS = [
   ['Android Studio', /android/i],
 ];
 
-const S = { items: [], tab: 'all', q: '' };
+const MARK_KEY = 'myapps-marks-v1';
+const MARKS = { '': '—', heart: '❤️', question: '❓' };
+const S = { items: [], tab: 'all', q: '', tool: '', mark: '' };
 const TABS = [['all', 'Все'], ['apk', 'APK'], ['folder', 'Папки без APK']];
 
 function esc(s) {
@@ -242,8 +248,16 @@ function render() {
   }).join('');
 
   const q = S.q.toLowerCase();
+  const marks = store(MARK_KEY, {});
+  const tools = [...new Set(S.items.map(a => a.source))].sort();
+  document.getElementById('flt').innerHTML =
+    `<label>Инструмент <select id="fTool"><option value="">Все</option>${tools.map(t => `<option ${S.tool === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
+    `<label>Отметка <select id="fMark">${Object.entries(MARKS).map(([k, v]) => `<option value="${k}" ${S.mark === k ? 'selected' : ''}>${v === '—' ? 'Любая' : v + (k === 'heart' ? ' Нравится' : ' Вопрос')}</option>`).join('')}</select></label>`;
   const rows = S.items.filter(a =>
-    (S.tab === 'all' || a.platform === S.tab) && (!q || a.name.toLowerCase().includes(q))
+    (S.tab === 'all' || a.platform === S.tab) &&
+    (!q || a.name.toLowerCase().includes(q)) &&
+    (!S.tool || a.source === S.tool) &&
+    (!S.mark || (marks[a.name] || '') === S.mark)
   );
   if (!rows.length) {
     el.innerHTML = '<div class="em">Ничего не найдено</div>';
@@ -252,7 +266,7 @@ function render() {
   el.innerHTML = `<table>
     <thead><tr>
       <th>Название</th><th>Создано в</th><th>Дата создания</th><th>Дата последней версии</th>
-      <th>Номер версии</th><th>Установлено на этом устройстве</th><th>Действия</th>
+      <th>Номер версии</th><th>Установлено на этом устройстве</th><th>Отметка</th><th>Действия</th>
     </tr></thead>
     <tbody>${rows.map(a => {
       const i = S.items.indexOf(a);
@@ -268,6 +282,7 @@ function render() {
         <td>${fmt(a.versionDate)}</td>
         <td>${esc(a.version)}</td>
         <td>${status}</td>
+        <td><select data-mark="${esc(a.name)}">${Object.entries(MARKS).map(([k, v]) => `<option value="${k}" ${(marks[a.name] || '') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
         <td><div class="acts">${main}<button class="btn bv" data-act="go" data-i="${i}">Перейти</button><button class="btn br" data-act="delete" data-i="${i}">Удалить папку (ветку)</button></div></td>
       </tr>`;
     }).join('')}</tbody></table>`;
@@ -400,6 +415,16 @@ async function load(force) {
 }
 
 document.getElementById('srch').addEventListener('input', e => { S.q = e.target.value; render(); });
+document.addEventListener('change', e => {
+  if (e.target.id === 'fTool') { S.tool = e.target.value; render(); }
+  if (e.target.id === 'fMark') { S.mark = e.target.value; render(); }
+  if (e.target.dataset.mark !== undefined) {
+    const m = store(MARK_KEY, {});
+    if (e.target.value) m[e.target.dataset.mark] = e.target.value; else delete m[e.target.dataset.mark];
+    localStorage.setItem(MARK_KEY, JSON.stringify(m));
+    render();
+  }
+});
 document.getElementById('refresh').addEventListener('click', () => { load(true); checkSelf(); });
 document.getElementById('settings').addEventListener('click', openSettings);
 document.getElementById('theme').addEventListener('click', toggleTheme);
