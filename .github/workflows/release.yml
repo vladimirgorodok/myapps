@@ -1,0 +1,67 @@
+name: Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Версия из тега
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME:-v0.0.0}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "code=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Проставить версию в приложении и Android
+        run: |
+          sed -i "s/const APP_VERSION = '[^']*';/const APP_VERSION = '${{ steps.ver.outputs.version }}';/" myapps.html
+          sed -i "s/versionCode [0-9]*/versionCode ${{ steps.ver.outputs.code }}/; s/versionName \"[^\"]*\"/versionName \"${{ steps.ver.outputs.version }}\"/" android/app/build.gradle
+
+      - name: Подготовить www и синхронизировать Capacitor
+        run: |
+          mkdir -p www
+          cp myapps.html www/index.html
+          npm ci
+          npx @capacitor/cli@8.6.3 sync android
+
+      - name: Собрать APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Переименовать APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "myapps-${{ steps.ver.outputs.version }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: myapps-${{ steps.ver.outputs.version }}
+          path: myapps-${{ steps.ver.outputs.version }}.apk
+
+      - name: Опубликовать релиз
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "myapps-${{ steps.ver.outputs.version }}.apk" \
+            --title "MyApps ${{ steps.ver.outputs.version }}" \
+            --generate-notes
