@@ -38,7 +38,7 @@ th{background:var(--c2);color:var(--t2);font-weight:600;white-space:normal;line-
 tr:last-child td{border-bottom:none}
 .nm{font-weight:600}
 .bd{padding:.1rem .4rem;border-radius:4px;font-size:.68rem;font-weight:700;color:#fff;margin-left:.3rem}
-.bd.apk{background:var(--g)}.bd.pwa{background:var(--bl)}.bd.folder{background:#8b5cf6}
+.bd.apk{background:var(--g)}.bd.folder{background:#8b5cf6}
 .tool{display:inline-block;padding:.1rem .45rem;border-radius:4px;background:var(--c2);border:1px solid var(--b);font-size:.75rem}
 .ok{color:var(--g);font-weight:600}.no{color:var(--t2)}
 .acts{display:flex;gap:.3rem;flex-wrap:nowrap}
@@ -95,7 +95,7 @@ footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7
 <script>
 const OWNER = 'vladimirgorodok';
 const SELF_REPO = 'myapps';
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const API = 'https://api.github.com';
 const CACHE_KEY = 'myapps-cache-v1';
 const INSTALLED_KEY = 'myapps-installed-v1';
@@ -117,7 +117,7 @@ const TOOLS = [
 ];
 
 const S = { items: [], tab: 'all', q: '' };
-const TABS = [['all', 'Все'], ['apk', 'APK'], ['pwa', 'PWA'], ['folder', 'Папки без APK и PWA']];
+const TABS = [['all', 'Все'], ['apk', 'APK'], ['folder', 'Папки без APK']];
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -171,7 +171,6 @@ async function loadRepos(force) {
     const rootApk = files.find(f => f.name.toLowerCase().endsWith('.apk'));
     let platform = 'folder';
     if (asset || rootApk) platform = 'apk';
-    else if (names.includes('index.html') || names.includes('manifest.webmanifest') || names.includes('manifest.json')) platform = 'pwa';
     return {
       name: r.name,
       url: r.html_url,
@@ -181,7 +180,6 @@ async function loadRepos(force) {
       versionDate: rel ? rel.published_at : r.pushed_at,
       platform,
       apkUrl: asset ? asset.browser_download_url : (rootApk ? rootApk.download_url : null),
-      pwaUrl: platform === 'pwa' ? `https://${OWNER}.github.io/${r.name}/` : null
     };
   }));
   const data = { t: Date.now(), items };
@@ -190,15 +188,45 @@ async function loadRepos(force) {
 }
 
 async function checkSelf() {
+  const box = document.getElementById('selfUpd');
+  box.innerHTML = '<div class="upd"><span>Проверка обновлений…</span></div>';
   try {
     const rel = await gh(`/repos/${OWNER}/${SELF_REPO}/releases/latest`);
     const asset = rel.assets.find(a => a.name.toLowerCase().endsWith('.apk'));
-    if (isNewer(rel.tag_name, APP_VERSION) && asset) {
-      document.getElementById('selfUpd').innerHTML =
-        `<div class="upd"><span>Доступна новая версия приложения: <b>${esc(rel.tag_name)}</b> (сейчас ${APP_VERSION})</span>` +
-        `<a class="btn bg" href="${esc(asset.browser_download_url)}" target="_blank" rel="noopener">Скачать</a></div>`;
+    if (!asset) {
+      box.innerHTML = `<div class="upd"><span>В релизе ${esc(rel.tag_name)} нет APK-файла.</span></div>`;
+    } else if (isNewer(rel.tag_name, APP_VERSION)) {
+      box.innerHTML =
+        `<div class="upd"><span>Доступна новая версия: <b>${esc(rel.tag_name)}</b> (сейчас ${APP_VERSION})</span>` +
+        `<button class="btn bg" data-apk="${esc(asset.browser_download_url)}">Скачать и установить</button></div>`;
+    } else {
+      box.innerHTML = `<div class="upd"><span>Установлена последняя версия: ${APP_VERSION}</span></div>`;
     }
-  } catch (e) {}
+  } catch (e) {
+    const none = /404/.test(e.message);
+    box.innerHTML = `<div class="upd"><span>${none
+      ? 'В репозитории пока нет релиза с APK, обновления не проверить.'
+      : 'Не удалось проверить обновления: ' + esc(e.message) + '.'}</span></div>`;
+  }
+}
+
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
+  }
+  return Promise.resolve(legacyCopy(text));
+}
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove();
+  return ok;
 }
 
 function statusOf(a) {
@@ -233,9 +261,8 @@ function render() {
         : inst ? '<span class="ok">Установлено</span>' : '<span class="no">Нет</span>';
       let main = '';
       if (a.platform === 'apk') main = `<button class="btn bg" data-act="install" data-i="${i}" ${a.apkUrl ? '' : 'disabled'}>Скачать и установить</button>`;
-      if (a.platform === 'pwa') main = `<button class="btn bb" data-act="run" data-i="${i}">Запустить</button>`;
       return `<tr>
-        <td class="nm">${esc(a.name)}<span class="bd ${a.platform}">${a.platform === 'apk' ? 'APK' : a.platform === 'pwa' ? 'PWA' : 'Папка'}</span></td>
+        <td class="nm">${esc(a.name)}<span class="bd ${a.platform}">${a.platform === 'apk' ? 'APK' : 'Папка'}</span></td>
         <td><span class="tool">${esc(a.source)}</span></td>
         <td>${fmt(a.created)}</td>
         <td>${fmt(a.versionDate)}</td>
@@ -286,14 +313,15 @@ async function installApk(a) {
 }
 
 async function deleteRepo(a) {
+  const copied = await copyText(a.name);
   let token = localStorage.getItem(TOKEN_KEY);
   if (!token) {
-    toast('Сначала укажите токен GitHub в «Настройки».');
+    toast((copied ? `Название «${a.name}» скопировано. ` : '') + 'Сначала укажите токен GitHub в «Настройки».');
     return;
   }
   const typed = await ask({
     title: 'Удалить папку (ветку)?',
-    text: `Репозиторий «${a.name}» будет удалён на GitHub вместе со всем содержимым. Это нельзя отменить. Для подтверждения введите его название.`,
+    text: `Название «${a.name}» ${copied ? 'скопировано в буфер обмена. ' : ''}Репозиторий будет удалён на GitHub вместе со всем содержимым. Это нельзя отменить. Вставьте или введите название для подтверждения.`,
     placeholder: a.name, okText: 'Удалить', okClass: 'br', value: ''
   });
   if (typed === null || typed === false) return;
@@ -346,6 +374,8 @@ function toggleTheme() {
 }
 
 document.addEventListener('click', e => {
+  const upd = e.target.closest('[data-apk]');
+  if (upd) { window.open(upd.dataset.apk, '_blank', 'noopener'); return; }
   const tab = e.target.closest('[data-tab]');
   if (tab) { S.tab = tab.dataset.tab; render(); return; }
   const btn = e.target.closest('[data-act]');
@@ -353,11 +383,9 @@ document.addEventListener('click', e => {
   const a = S.items[Number(btn.dataset.i)];
   if (!a) return;
   if (btn.dataset.act === 'install') installApk(a);
-  if (btn.dataset.act === 'run') window.open(a.pwaUrl, '_blank', 'noopener');
   if (btn.dataset.act === 'go') window.open(a.url, '_blank', 'noopener');
   if (btn.dataset.act === 'delete') deleteRepo(a);
 });
-
 async function load(force) {
   const list = document.getElementById('list');
   list.innerHTML = '<div class="em">Загрузка из GitHub…</div>';
