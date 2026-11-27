@@ -43,7 +43,7 @@ tr:last-child td{border-bottom:none}
 .bd{padding:.1rem .4rem;border-radius:4px;font-size:.68rem;font-weight:700;color:#fff;margin-left:.3rem}
 .bd.apk{background:var(--g)}.bd.folder{background:#8b5cf6}
 .tool{display:inline-block;padding:.1rem .45rem;border-radius:4px;background:var(--c2);border:1px solid var(--b);font-size:.75rem}
-.ok{color:var(--g);font-weight:600}.no{color:var(--t2)}
+.ok{color:var(--g);font-weight:600}.warn{color:#f59e0b;font-weight:600}.no{color:var(--t2)}
 .acts{display:flex;gap:.3rem;flex-wrap:nowrap}
 .em{text-align:center;padding:3rem 1rem;color:var(--t2)}
 .err{margin:1rem;padding:.8rem;background:#3a1a1a;border:1px solid var(--r);border-radius:8px;color:#ffb3b3}
@@ -99,9 +99,9 @@ footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7
 <script>
 const OWNER = 'vladimirgorodok';
 const SELF_REPO = 'myapps';
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const API = 'https://api.github.com';
-const CACHE_KEY = 'myapps-cache-v1';
+const CACHE_KEY = 'myapps-cache-v2';
 const INSTALLED_KEY = 'myapps-installed-v1';
 const TOKEN_KEY = 'myapps-token-v1';
 const THEME_KEY = 'myapps-theme-v1';
@@ -122,7 +122,17 @@ const TOOLS = [
 
 const MARK_KEY = 'myapps-marks-v1';
 const MARKS = { '': '—', heart: '❤️', question: '❓' };
-const S = { items: [], tab: 'all', q: '', tool: '', mark: '' };
+const S = { items: [], tab: 'all', q: '', tool: '', mark: '', installed: null };
+
+function nativeApps() {
+  return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.InstalledApps;
+}
+function b64utf8(b64) {
+  return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
+}
+function bareVersion(v) {
+  return String(v ?? '').replace(/^v/, '');
+}
 const TABS = [['all', 'Все'], ['apk', 'APK'], ['folder', 'Папки без APK']];
 
 function esc(s) {
@@ -177,6 +187,16 @@ async function loadRepos(force) {
     const rootApk = files.find(f => f.name.toLowerCase().endsWith('.apk'));
     let platform = 'folder';
     if (asset || rootApk) platform = 'apk';
+    let packageName = null;
+    if (platform === 'apk') {
+      for (const f of ['android/app/build.gradle', 'android/app/build.gradle.kts']) {
+        try {
+          const g = await gh(`/repos/${OWNER}/${r.name}/contents/${f}`);
+          const m = b64utf8(g.content).match(/applicationId\s*=?\s*["']([\w.]+)["']/);
+          if (m) { packageName = m[1]; break; }
+        } catch (e) {}
+      }
+    }
     return {
       name: r.name,
       url: r.html_url,
@@ -185,6 +205,7 @@ async function loadRepos(force) {
       version: rel ? rel.tag_name : '—',
       versionDate: rel ? rel.published_at : r.pushed_at,
       platform,
+      packageName,
       apkUrl: asset ? asset.browser_download_url : (rootApk ? rootApk.download_url : null),
     };
   }));
@@ -237,7 +258,26 @@ function legacyCopy(text) {
 
 function statusOf(a) {
   if (a.platform !== 'apk') return null;
-  return store(INSTALLED_KEY, {})[a.name] === a.version;
+  if (S.installed && a.packageName) {
+    const v = S.installed[a.packageName];
+    if (v == null) return { state: 'none' };
+    if (bareVersion(v) === bareVersion(a.version)) return { state: 'ok', v };
+    return { state: 'old', v };
+  }
+  return store(INSTALLED_KEY, {})[a.name] === a.version ? { state: 'ok', v: a.version } : { state: 'none' };
+}
+
+async function checkInstalled() {
+  const plugin = nativeApps();
+  if (!plugin) return;
+  const packages = S.items.map(a => a.packageName).filter(Boolean);
+  try {
+    const res = await plugin.getVersions({ packages });
+    S.installed = res;
+  } catch (e) {
+    S.installed = null;
+  }
+  render();
 }
 
 function render() {
@@ -272,7 +312,9 @@ function render() {
       const i = S.items.indexOf(a);
       const inst = statusOf(a);
       const status = a.platform !== 'apk' ? '<span class="no">—</span>'
-        : inst ? '<span class="ok">Установлено</span>' : '<span class="no">Нет</span>';
+        : !inst || inst.state === 'none' ? '<span class="no">Нет</span>'
+        : inst.state === 'ok' ? `<span class="ok">Установлено ${esc(bareVersion(inst.v))}</span>`
+        : `<span class="warn">Установлено ${esc(bareVersion(inst.v))}, есть ${esc(bareVersion(a.version))}</span>`;
       let main = '';
       if (a.platform === 'apk') main = `<button class="btn bg" data-act="install" data-i="${i}" ${a.apkUrl ? '' : 'disabled'}>Скачать и установить</button>`;
       return `<tr>
@@ -316,6 +358,10 @@ function ask({ title, text, placeholder = '', okText = 'OK', okClass = 'bp', val
 async function installApk(a) {
   if (!a.apkUrl) return;
   window.open(a.apkUrl, '_blank', 'noopener');
+  if (nativeApps()) {
+    toast('После установки вернитесь в приложение, статус обновится.');
+    return;
+  }
   toast('Скачивание APK открыто. После установки отметьте приложение.');
   setTimeout(async () => {
     const yes = await ask({ title: 'Установка', text: `Приложение «${a.name}» установлено на этом устройстве?`, okText: 'Да', okClass: 'bg' });
@@ -409,11 +455,13 @@ async function load(force) {
     S.items = data.items;
     document.getElementById('lu').textContent = new Date(data.t).toLocaleString('ru-RU');
     render();
+    checkInstalled();
   } catch (e) {
     list.innerHTML = `<div class="err">Не удалось загрузить список из GitHub: ${esc(e.message)}. Проверьте интернет или попробуйте позже.</div>`;
   }
 }
 
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkInstalled(); });
 document.getElementById('srch').addEventListener('input', e => { S.q = e.target.value; render(); });
 document.addEventListener('change', e => {
   if (e.target.id === 'fTool') { S.tool = e.target.value; render(); }
