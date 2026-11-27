@@ -1,0 +1,14 @@
+{
+  "myapps": "ru.myapps.myapps",
+  "netprofile": "com.example.netprofile",
+  "cleanup-ui-android": "ru.opencode.cleanup",
+  "personal-safe": "ru.opencode.safe",
+  "home-lan-monitor": "ru.home.lanmonitor",
+  "lumen-launcher": "ru.lumen.launcher",
+  "tablica-kodov": "com.codetable.app",
+  "PwaIconExtractor": "ru.workspace.pwaiconextractor",
+  "Platezhi2": "ru.platezhi2.app",
+  "kod-dnya": "com.koddnya.app",
+  "yadisk-photo-ai": "com.yadiskphotoai.app",
+  "zen-counter": "com.zencounter.app"
+}

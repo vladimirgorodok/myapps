@@ -99,9 +99,9 @@ footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7
 <script>
 const OWNER = 'vladimirgorodok';
 const SELF_REPO = 'myapps';
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.4.3';
 const API = 'https://api.github.com';
-const CACHE_KEY = 'myapps-cache-v2';
+const CACHE_KEY = 'myapps-cache-v3';
 const INSTALLED_KEY = 'myapps-installed-v1';
 const TOKEN_KEY = 'myapps-token-v1';
 const THEME_KEY = 'myapps-theme-v1';
@@ -176,10 +176,20 @@ async function gh(path) {
   return r.json();
 }
 
+async function loadPackageMap() {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${OWNER}/${SELF_REPO}/main/packages.json`, { cache: 'no-store' });
+    return r.ok ? await r.json() : {};
+  } catch (e) {
+    return {};
+  }
+}
+
 async function loadRepos(force) {
   const cached = store(CACHE_KEY, null);
   if (!force && cached && Date.now() - cached.t < CACHE_TTL) return cached;
   const repos = await gh(`/users/${OWNER}/repos?per_page=100&sort=updated`);
+  const pkgMap = await loadPackageMap();
   const items = await Promise.all(repos.filter(r => !r.fork).map(async r => {
     let rel = null, root = [];
     try { rel = await gh(`/repos/${OWNER}/${r.name}/releases/latest`); } catch (e) {}
@@ -190,8 +200,8 @@ async function loadRepos(force) {
     const rootApk = files.find(f => f.name.toLowerCase().endsWith('.apk'));
     let platform = 'folder';
     if (asset || rootApk) platform = 'apk';
-    let packageName = null;
-    if (platform === 'apk') {
+    let packageName = pkgMap[r.name] || null;
+    if (platform === 'apk' && !packageName) {
       for (const f of ['android/app/build.gradle', 'android/app/build.gradle.kts']) {
         try {
           const g = await gh(`/repos/${OWNER}/${r.name}/contents/${f}`);
