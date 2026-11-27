@@ -1,14 +1,14 @@
 {
-  "myapps": "ru.myapps.myapps",
-  "netprofile": "com.example.netprofile",
-  "cleanup-ui-android": "ru.opencode.cleanup",
-  "personal-safe": "ru.opencode.safe",
-  "home-lan-monitor": "ru.home.lanmonitor",
-  "lumen-launcher": "ru.lumen.launcher",
-  "tablica-kodov": "com.codetable.app",
-  "PwaIconExtractor": "ru.workspace.pwaiconextractor",
-  "Platezhi2": "ru.platezhi2.app",
-  "kod-dnya": "com.koddnya.app",
-  "yadisk-photo-ai": "com.yadiskphotoai.app",
-  "zen-counter": "com.zencounter.app"
+  "myapps": { "package": "ru.myapps.myapps", "title": "MyApps" },
+  "netprofile": { "package": "com.example.netprofile", "title": "NetProfile" },
+  "cleanup-ui-android": { "package": "ru.opencode.cleanup", "title": "CleanupUI" },
+  "personal-safe": { "package": "ru.opencode.safe", "title": "Safe" },
+  "home-lan-monitor": { "package": "ru.home.lanmonitor", "title": "Home LAN Monitor" },
+  "lumen-launcher": { "package": "ru.lumen.launcher", "title": "Lumen" },
+  "tablica-kodov": { "package": "com.codetable.app", "title": "Таблица кодов" },
+  "PwaIconExtractor": { "package": "ru.workspace.pwaiconextractor", "title": "PWA Icon Extractor" },
+  "Platezhi2": { "package": "ru.platezhi2.app", "title": "Platezhi2" },
+  "kod-dnya": { "package": "com.koddnya.app", "title": "Код дня" },
+  "yadisk-photo-ai": { "package": "com.yadiskphotoai.app", "title": "Yadisk Photo AI" },
+  "zen-counter": { "package": "com.zencounter.app", "title": "Zen Counter" }
 }

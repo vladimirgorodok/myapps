@@ -28,7 +28,10 @@ public class InstalledAppsPlugin extends Plugin {
                 String pkg = packages.getString(i);
                 try {
                     PackageInfo info = pm.getPackageInfo(pkg, 0);
-                    result.put(pkg, info.versionName == null ? "" : info.versionName);
+                    JSObject entry = new JSObject();
+                    entry.put("version", info.versionName == null ? "" : info.versionName);
+                    entry.put("label", pm.getApplicationLabel(info.applicationInfo).toString());
+                    result.put(pkg, entry);
                 } catch (PackageManager.NameNotFoundException e) {
                     result.put(pkg, JSONObject.NULL);
                 }
