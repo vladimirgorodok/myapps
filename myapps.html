@@ -99,7 +99,7 @@ footer{padding:1rem;border-top:1px solid var(--b);text-align:center;font-size:.7
 <script>
 const OWNER = 'vladimirgorodok';
 const SELF_REPO = 'myapps';
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 const API = 'https://api.github.com';
 const CACHE_KEY = 'myapps-cache-v2';
 const INSTALLED_KEY = 'myapps-installed-v1';
@@ -125,7 +125,10 @@ const MARKS = { '': '—', heart: '❤️', question: '❓' };
 const S = { items: [], tab: 'all', q: '', tool: '', mark: '', installed: null };
 
 function nativeApps() {
-  return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.InstalledApps;
+  const C = window.Capacitor;
+  if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null;
+  if (C.registerPlugin) return C.registerPlugin('InstalledApps');
+  return (C.Plugins && C.Plugins.InstalledApps) || null;
 }
 function b64utf8(b64) {
   return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
@@ -276,6 +279,7 @@ async function checkInstalled() {
     S.installed = res;
   } catch (e) {
     S.installed = null;
+    toast('Не удалось проверить установленные: ' + (e.message || e));
   }
   render();
 }
